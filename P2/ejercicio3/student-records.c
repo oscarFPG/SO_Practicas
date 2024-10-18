@@ -58,7 +58,94 @@ int print_binary_file(char *path){
 
 int write_binary_file(char *input_file, char *output_file){
 
-	/* To be completed (part C) */
+	char buffer[MAXLEN_LINE_FILE];
+	memset(&buffer, 0, MAXLEN_LINE_FILE);
+
+	FILE* input = fopen(input_file, "r");
+	if(input == NULL){
+		printf("Error opening the file\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Read number of students in the file
+	char c;
+	fread(&c, sizeof(char), 1, input);
+	int numStudents = atoi(&c);
+	fread(&c, sizeof(char), 1, input);
+
+	// Read students
+	student_t* lista = malloc(sizeof(student_t) * numStudents);
+	for(int i = 0; i < numStudents; i++){
+		readStudent(input, &lista[i]);
+	}
+	fclose(input);
+
+
+	// Opening binary file
+	FILE* output = fopen(output_file, "w");
+	if(output == NULL){
+		printf("Error opening the file\n");
+		exit(EXIT_FAILURE);
+	}
+
+
+	// Write number of students
+	int status;
+	sprintf(&buffer, "%d", numStudents);
+	buffer[strlen(buffer)] = '\0';
+	status = fwrite(&buffer, sizeof(int), 1, output);
+	memset(&buffer, 0, strlen(buffer));
+	if(status == -1){
+		printf("Error writing in the binary file\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Write students data
+	for(int i = 0; i < numStudents; i++){
+
+		// Write ID
+		sprintf(&buffer, "%d", lista[i].student_id);
+		buffer[strlen(buffer)] = '\0';
+		status = fwrite(&buffer, sizeof(int), 1, output);
+		memset(&buffer, 0, strlen(buffer));
+		if(status == -1){
+			printf("Error writing in the binary file\n");
+			exit(EXIT_FAILURE);
+		}
+
+		// Write NIF
+		sprintf(&buffer, "%s", lista[i].NIF);
+		buffer[strlen(buffer)] = '\0';
+		status = fwrite(&buffer, sizeof(char), strlen(buffer), output);
+		memset(&buffer, 0, strlen(buffer));
+		if(status == -1){
+			printf("Error writing in the binary file\n");
+			exit(EXIT_FAILURE);
+		}		
+
+		// Write name
+		sprintf(&buffer, "%s", lista[i].first_name);
+		buffer[strlen(buffer)] = '\0';
+		status = fwrite(&buffer, sizeof(char), strlen(buffer), output);
+		memset(&buffer, 0, strlen(buffer));
+		if(status == -1){
+			printf("Error writing in the binary file\n");
+			exit(EXIT_FAILURE);
+		}
+
+		// Write surname
+		sprintf(&buffer, "%s", lista[i].last_name);
+		buffer[strlen(buffer)] = '\0';
+		status = fwrite(&buffer, sizeof(char), strlen(buffer), output);
+		memset(&buffer, 0, strlen(buffer));
+		if(status == -1){
+			printf("Error writing in the binary file\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+	char end = '\n';
+	fwrite(&end, sizeof(char), 1, output);
+	fclose(output);
 	return 0;
 }
 
