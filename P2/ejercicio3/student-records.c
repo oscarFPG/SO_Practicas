@@ -9,6 +9,83 @@
 /* Assume lines in the text file are no larger than 100 chars */
 #define MAXLEN_LINE_FILE 100
 
+
+void readStudent(FILE* file, student_t* s){
+
+	char buffer[MAXLEN_LINE_FILE];
+	memset(&buffer, '\0', MAXLEN_LINE_FILE);
+	char c;
+	int bytes = 0;
+
+	// Read ID
+	while( fread(&c, sizeof(char), 1, file) > 0 && c != ':'){
+		++bytes;
+	}
+
+	fseek(file, -1 - bytes, SEEK_CUR);
+	fread(&buffer, sizeof(char), bytes, file);
+	s->student_id = atoi(&buffer);
+
+	memset(&buffer, '\0', strlen(buffer));
+	bytes = 0;
+	fread(&c, sizeof(char), 1, file);	// Read the : to ignore
+
+
+	// Read DNI
+	while( fread(&c, sizeof(char), 1, file) > 0 && c != ':'){
+		if(c != ':')
+			++bytes;
+	}
+
+	fseek(file, -1 - bytes, SEEK_CUR);
+	fread(&buffer, sizeof(char), bytes, file);
+	strncpy(&s->NIF, &buffer, strlen(buffer));
+
+	memset(&buffer, '\0', strlen(buffer));
+	bytes = 0;
+	fread(&c, sizeof(char), 1, file);	// Read the : to ignore
+
+	// Read name
+	while( fread(&c, sizeof(char), 1, file) > 0 && c != ':'){
+		if(c != ':')
+			++bytes;
+	}
+
+	fseek(file, -1 - bytes, SEEK_CUR);
+	fread(&buffer, sizeof(char), bytes, file);
+	s->first_name = malloc(sizeof(char) * bytes);
+	strncpy(s->first_name, &buffer, strlen(buffer));
+
+	memset(&buffer, '\0', strlen(buffer));
+	bytes = 0;
+	fread(&c, sizeof(char), 1, file);	// Read the : to ignore
+
+	// Read surname
+	while( fread(&c, sizeof(char), 1, file) > 0 && c != '\n'){
+		if(c != ':')
+			++bytes;
+	}
+
+	fseek(file, -1 - bytes, SEEK_CUR);
+	fread(&buffer, sizeof(char), bytes, file);
+	buffer[bytes] = '\0';
+	s->last_name = malloc(sizeof(char) * bytes);
+	strncpy(s->last_name, &buffer, strlen(buffer));
+
+	memset(&buffer, '\0', strlen(buffer));
+	bytes = 0;
+
+	fread(&c, 1, 1, file); // Ignore the \n at the end
+
+	// Print all
+	/*
+	printf("ID: %d\n", s->student_id);
+	printf("NIF: %s\n", s->NIF);
+	printf("Name: %s\n", s->first_name);
+	printf("Surname: %s\n", s->last_name);
+	*/
+}
+
 int readInteger(FILE* file){
 
 	char c;
