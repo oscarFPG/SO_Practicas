@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <unistd.h> /* for getopt() */
-#include <stdlib.h> /* for EXIT_SUCCESS, EXIT_FAILURE */
+#include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
 #include "defs.h"
@@ -9,6 +9,30 @@
 /* Assume lines in the text file are no larger than 100 chars */
 #define MAXLEN_LINE_FILE 100
 
+/* -------------------------------------------------------------------------- */
+char* loadstr(FILE* file){
+
+	char c;
+	int offset = 1;
+
+	while(fread(&c, 1, 1, file) != 0 && (c != '\0' && c != '\n')){
+		++offset;
+	}
+
+	// Nothing read -> exit
+	if(offset == 0)
+		return NULL;
+
+	// Restablecer puntero
+	fseek(file, 0 - offset, SEEK_CUR);
+
+	// Guardar string leido en el buffer
+	char* buffer = malloc(sizeof(char) * offset);
+	fread(buffer, sizeof(char), offset, file);
+	buffer[offset - 1] = '\0';
+
+	return buffer;
+}
 
 void readStudent(FILE* file, student_t* s){
 
@@ -30,7 +54,6 @@ void readStudent(FILE* file, student_t* s){
 	bytes = 0;
 	fread(&c, sizeof(char), 1, file);	// Read the : to ignore
 
-
 	// Read DNI
 	while( fread(&c, sizeof(char), 1, file) > 0 && c != ':'){
 		if(c != ':')
@@ -39,7 +62,9 @@ void readStudent(FILE* file, student_t* s){
 
 	fseek(file, -1 - bytes, SEEK_CUR);
 	fread(&buffer, sizeof(char), bytes, file);
+	buffer[strlen(buffer)] = '\0';
 	strncpy(&s->NIF, &buffer, strlen(buffer));
+	s->NIF[9] = '\0';
 
 	memset(&buffer, '\0', strlen(buffer));
 	bytes = 0;
@@ -53,8 +78,10 @@ void readStudent(FILE* file, student_t* s){
 
 	fseek(file, -1 - bytes, SEEK_CUR);
 	fread(&buffer, sizeof(char), bytes, file);
-	s->first_name = malloc(sizeof(char) * bytes);
+	buffer[strlen(buffer)] = '\0';
+	s->first_name = malloc(sizeof(char) * bytes + 1);
 	strncpy(s->first_name, &buffer, strlen(buffer));
+	s->first_name[strlen(s->first_name)] = '\0';
 
 	memset(&buffer, '\0', strlen(buffer));
 	bytes = 0;
@@ -69,21 +96,13 @@ void readStudent(FILE* file, student_t* s){
 	fseek(file, -1 - bytes, SEEK_CUR);
 	fread(&buffer, sizeof(char), bytes, file);
 	buffer[bytes] = '\0';
-	s->last_name = malloc(sizeof(char) * bytes);
+	s->last_name = malloc(sizeof(char) * bytes + 1);
 	strncpy(s->last_name, &buffer, strlen(buffer));
+	s->last_name[strlen(s->last_name)] = '\0';
 
 	memset(&buffer, '\0', strlen(buffer));
 	bytes = 0;
-
 	fread(&c, 1, 1, file); // Ignore the \n at the end
-
-	// Print all
-	/*
-	printf("ID: %d\n", s->student_id);
-	printf("NIF: %s\n", s->NIF);
-	printf("Name: %s\n", s->first_name);
-	printf("Surname: %s\n", s->last_name);
-	*/
 }
 
 int readInteger(FILE* file){
@@ -106,11 +125,12 @@ int readInteger(FILE* file){
 
 	return number;
 }
+/* -------------------------------------------------------------------------- */
 
 
 int print_text_file(char *path){
 
-FILE* file = fopen(path, "r");
+	FILE* file = fopen(path, "r");
 	if(file == NULL){
 		printf("Error: no se pudo abrir el archivo\n");
 		exit(EXIT_FAILURE);
@@ -128,15 +148,56 @@ FILE* file = fopen(path, "r");
 		readStudent(file, &lista[i]);
 	}
 
+	// Print all students
+	for(int i = 0; i < numStudents; i++){
+		printf("[Entry #%d]\n", i);
+		printf("\tstudent_id=%d\n", lista[i].student_id);
+		printf("\tNIF=%s\n", lista[i].NIF);
+		printf("\tfirst_name=%s\n", lista[i].first_name);
+		printf("\tlast_name=%s\n", lista[i].last_name);
+	}
+
 	return 0;
 }
 
 int print_binary_file(char *path){
 
-	/* To be completed (part B) */
+	FILE* file = fopen(path, "r");
+	if(file == NULL){
+		printf("Error opening the binary file\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Read number of students in the file
+	int numStudents;
+	fread(&numStudents, sizeof(int), 1, file);
+
+	// Print all students
+	for(int i = 0; i < numStudents; i++){
+
+		// Get all student info
+		int ID;
+		fread(&ID, sizeof(int), 1, file);
+		char* NIF = loadstr(file);
+		char* name = loadstr(file);
+		char* surname = loadstr(file);
+
+		// Print all info
+		printf("[Entry #%d]\n", i);
+		printf("\tstudent_id=%d\n", ID);
+		printf("\tNIF=%s\n", NIF);
+		printf("\tfirst_name=%s\n", name);
+		printf("\tlast_name=%s\n", surname);
+
+		// Free memory
+		free(NIF);
+		free(name);
+		free(surname);
+	}
+
+	fclose(file);
 	return 0;
 }
-
 
 int write_binary_file(char *input_file, char *output_file){
 
@@ -173,10 +234,7 @@ int write_binary_file(char *input_file, char *output_file){
 
 	// Write number of students
 	int status;
-	sprintf(&buffer, "%d", numStudents);
-	buffer[strlen(buffer)] = '\0';
-	status = fwrite(&buffer, sizeof(int), 1, output);
-	memset(&buffer, 0, strlen(buffer));
+	status = fwrite(&numStudents, sizeof(int), 1, output);
 	if(status == -1){
 		printf("Error writing in the binary file\n");
 		exit(EXIT_FAILURE);
@@ -186,17 +244,14 @@ int write_binary_file(char *input_file, char *output_file){
 	for(int i = 0; i < numStudents; i++){
 
 		// Write ID
-		sprintf(&buffer, "%d", lista[i].student_id);
-		buffer[strlen(buffer)] = '\0';
-		status = fwrite(&buffer, sizeof(int), 1, output);
-		memset(&buffer, 0, strlen(buffer));
+		status = fwrite(&lista[i].student_id, sizeof(int), 1, output);
 		if(status == -1){
 			printf("Error writing in the binary file\n");
 			exit(EXIT_FAILURE);
 		}
 
 		// Write NIF
-		sprintf(&buffer, "%s", lista[i].NIF);
+		sprintf(&buffer, "%s\n", lista[i].NIF);
 		buffer[strlen(buffer)] = '\0';
 		status = fwrite(&buffer, sizeof(char), strlen(buffer), output);
 		memset(&buffer, 0, strlen(buffer));
@@ -206,7 +261,7 @@ int write_binary_file(char *input_file, char *output_file){
 		}		
 
 		// Write name
-		sprintf(&buffer, "%s", lista[i].first_name);
+		sprintf(&buffer, "%s\n", lista[i].first_name);
 		buffer[strlen(buffer)] = '\0';
 		status = fwrite(&buffer, sizeof(char), strlen(buffer), output);
 		memset(&buffer, 0, strlen(buffer));
@@ -216,7 +271,7 @@ int write_binary_file(char *input_file, char *output_file){
 		}
 
 		// Write surname
-		sprintf(&buffer, "%s", lista[i].last_name);
+		sprintf(&buffer, "%s\n", lista[i].last_name);
 		buffer[strlen(buffer)] = '\0';
 		status = fwrite(&buffer, sizeof(char), strlen(buffer), output);
 		memset(&buffer, 0, strlen(buffer));
@@ -225,8 +280,6 @@ int write_binary_file(char *input_file, char *output_file){
 			exit(EXIT_FAILURE);
 		}
 	}
-	char end = '\n';
-	fwrite(&end, sizeof(char), 1, output);
 	fclose(output);
 	return 0;
 }
@@ -243,7 +296,7 @@ int main(int argc, char *argv[]){
 	ret_code = 0;
 
 	/* Parse command-line options (incomplete code!) */
-	while ((opt = getopt(argc, argv, "hi:p")) != -1){
+	while ((opt = getopt(argc, argv, "hi:o:pb")) != -1){
 
 		switch (opt){
 		case 'h':
@@ -252,9 +305,20 @@ int main(int argc, char *argv[]){
 		case 'i':
 			options.input_file = optarg;
 			break;
+
+		case 'o':
+			options.output_file = optarg;
+			options.action = WRITE_BINARY_ACT;
+			break;
+
 		case 'p':
 			options.action = PRINT_TEXT_ACT;
 			break;
+
+		case 'b':
+			options.action = PRINT_BINARY_ACT;
+			break;
+
 		default:
 			exit(EXIT_FAILURE);
 		}
@@ -270,18 +334,19 @@ int main(int argc, char *argv[]){
 		fprintf(stderr, "Must indicate one of the following options: -p, -o, -b \n");
 		ret_code = EXIT_FAILURE;
 		break;
+
 	case PRINT_TEXT_ACT:
-		/* Part A */
 		ret_code = print_text_file(options.input_file);
 		break;
+
 	case WRITE_BINARY_ACT:
-		/* Part B */
 		ret_code = write_binary_file(options.input_file, options.output_file);
 		break;
+
 	case PRINT_BINARY_ACT:
-		/* Part C */
 		ret_code = print_binary_file(options.input_file);
 		break;
+
 	default:
 		break;
 	}
