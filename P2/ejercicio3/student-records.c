@@ -110,18 +110,23 @@ int readInteger(FILE* file){
 
 int print_text_file(char *path){
 
-	FILE* file = fopen(path, "r");
+FILE* file = fopen(path, "r");
 	if(file == NULL){
-		printf("Error: file not found\n");
+		printf("Error: no se pudo abrir el archivo\n");
 		exit(EXIT_FAILURE);
 	}
 
-	int numStudents = readInteger(file);
+	// Read number of students in the file
+	char c;
+	fread(&c, sizeof(char), 1, file);
+	int numStudents = atoi(&c);
+	fread(&c, sizeof(char), 1, file);
 
-
-	student_t student;
-	char buffer[MAXLEN_LINE_FILE];
-	memset(&buffer, 0, MAXLEN_LINE_FILE);
+	// Read students
+	student_t* lista = malloc(sizeof(student_t) * numStudents);
+	for(int i = 0; i < numStudents; i++){
+		readStudent(file, &lista[i]);
+	}
 
 	return 0;
 }
