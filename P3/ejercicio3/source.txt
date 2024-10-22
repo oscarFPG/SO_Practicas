@@ -1,0 +1,5 @@
+Este es un archivo de ejemplo.
+Esta es una linea nueva.
+Esta tambien.
+Otra linea nueva. Esta no. Esta tampoco.
+Esta es la ultima linea.
