@@ -1,0 +1,5 @@
+Este es un texto de ejemplo para copiar.
+Aqui se escribe una linea.
+Aqui otra.
+Aqui una linea con varios puntos. Como este. O este.
+Aqui termina el archivo de texto.
