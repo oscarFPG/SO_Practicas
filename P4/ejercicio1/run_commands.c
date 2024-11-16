@@ -12,6 +12,15 @@
 typedef enum {manualExecution, fileExecution} tOption;
 
 
+int getProcessIndexInArray(int* processes, int pid){
+
+    int i = 0;
+    while(pid != processes[i])
+        ++i;
+
+    return i;
+}
+
 pid_t launch_command(char** argv){
     
     pid_t pid = fork();
@@ -85,13 +94,13 @@ char **parse_command(const char *cmd, int* argc) {
     return argv;
 }
 
-
 int main(int argc, char *argv[]) {
 
     tOption option;
     char* filename = NULL;
-    char **cmd_argv = NULL;
+    char** cmd_argv = NULL;
     int cmd_argc;
+    int binary = 0;
 
     if (argc < 2) {
         fprintf(stderr, "Usage: %s \"command\" [ -b | -x command | -s file ]\n", argv[0]);
@@ -104,6 +113,8 @@ int main(int argc, char *argv[]) {
         case 'b':
             if(DEBUG)
                 printf("Opcion -b\n");
+
+            binary = 1;
             break;
 
         case 'x':
@@ -143,7 +154,7 @@ int main(int argc, char *argv[]) {
             free(cmd_argv[i]);
         free(cmd_argv);
     }
-    else if(option == fileExecution){
+    else if(option == fileExecution && !binary){
 
         char buffer[512];
         memset(&buffer, 0, 512);
@@ -181,6 +192,55 @@ int main(int argc, char *argv[]) {
         }
 
         return 0;
+    }
+    else if(option == fileExecution && binary){
+        
+        int procesos[50];
+        char buffer[512];
+        memset(&buffer, 0, 512);
+
+        FILE* fd = fopen(filename, "r");
+        if(fd == NULL){
+            printf("Error al abrir el fichero\n");
+            exit(EXIT_FAILURE);
+        }
+
+        int i = 0;
+        while( fgets((char *)&buffer, 512, fd) != NULL){
+            
+            // Almacenar el comando leido
+            cmd_argv = parse_command((char *)&buffer, &cmd_argc);
+
+            // Mostrar el comando con todos sus argumentos
+            printf("Running command #%d: ", i);
+            for(int i = 0; i < cmd_argc; i++)
+                printf("%s ", cmd_argv[i]);
+            printf("\n");
+
+            // Ejecutar comando
+            pid_t childProcess = launch_command(cmd_argv);
+
+            // Almacenar pid
+            procesos[i] = (int)childProcess;
+
+            // Liberar memoria
+            for (int i = 0; i < cmd_argc; i++)
+                free(cmd_argv[i]);
+            free(cmd_argv); 
+
+            // Limpiar memoria para almacenar el siguiente
+            memset((char *)&buffer, 0, sizeof(buffer));
+
+            i++;
+        }
+        
+        // Mostrar informacion de los procesos
+        int status;
+        for(int counter = 0; counter < i; counter++){
+            pid_t ID = waitpid(-1, &status, 0);
+            int index = getProcessIndexInArray(&procesos, ID);
+            printf("Command #%d terminated (pid: %d, status: %d)\n", index, ID, status);
+        }
     }
 
     return EXIT_SUCCESS;

@@ -2,11 +2,10 @@
 #include <stdlib.h>
 
 
-/*programa que temporiza la ejecución de un proceso hijo */
+/* Programa que temporiza la ejecución de un proceso hijo */
 
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv){
 
 	return 0;
 }
