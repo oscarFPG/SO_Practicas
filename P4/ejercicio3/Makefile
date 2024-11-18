@@ -2,7 +2,7 @@ SRC = $(wildcard *.c)
 TARGETS = $(SRC:%.c=%)
 
 CC = gcc
-CFLAGS = -g
+CFLAGS = -g -w
 LDFLAGS =
 LIBS =
 
