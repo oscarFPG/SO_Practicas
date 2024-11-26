@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -O0 -g -pthread
-LDFLAGS = -O0 -g -pthread
+CFLAGS = -g -pthread
+LDFLAGS = -g -pthread
 
 all: disco
 
