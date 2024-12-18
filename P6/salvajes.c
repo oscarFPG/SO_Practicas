@@ -12,18 +12,17 @@ sem_t* sem_mtx;
 datos_compartidos *mem_comp;
 int cont_midas = 0;
 
-void eat(void){
-	//unsigned long id = (unsigned long) getpid();
+void eat(){
 	
 	printf("Savage %lu eating, servings[%d]\n", getpid(), mem_comp->servings-1);
-	//mem_comp->servings--;
 	sleep(rand() % 5);
 }
 
-int getServingsFromPot(void){
-	sem_wait(sem_mtx);		//LOCK
+int getServingsFromPot(){
 
-	while(mem_comp->servings == 0){		// Hay que reponer raciones --> avisar cocinero
+	sem_wait(sem_mtx);
+
+	while(mem_comp->servings == 0){
 
 		printf("Savage %lu avisa al cocinero, no queda comida\n", getpid());
 		if(mem_comp->cook_waiting > 0){ // Si un cocinero esta esperando, 
@@ -37,12 +36,9 @@ int getServingsFromPot(void){
 		sem_wait(sem_mtx);				// Intenta recuperar el semaforo (lock) para comerr
 	}
 
-	//mem_comp->servings--;
 	mem_comp->servings--;
 	sem_post(sem_mtx);
 	eat(); //Accede seccion critica, pero como tiene el sem va bien
-
-	//sem_post(sem_mtx);		//UNLOCK
 }
 
 void savages(void){
@@ -76,7 +72,7 @@ int main(int argc, char *argv[]){
 	// El 0 en sem_open significa que estás abriendo el semáforo sin crearlo.
 	// Es equivalente a usar O_RDWR (acceso de lectura y escritura), y solo funciona
 	// si el semáforo ya fue creado previamente por otro proceso.
-	 if ((sem_cook = sem_open("sem_cook", 0)) == SEM_FAILED) {
+	if ((sem_cook = sem_open("sem_cook", 0)) == SEM_FAILED) {
         perror("Error sem_open(sem_cook), recuerda ejecutar cocinero primero");
         goto cleanup;
     }
@@ -98,22 +94,16 @@ int main(int argc, char *argv[]){
 
 cleanup:
     // Liberar recursos
-    if (mem_comp && mem_comp != MAP_FAILED) {
+    if (mem_comp && mem_comp != MAP_FAILED)
         munmap(mem_comp, sizeof(datos_compartidos));
-    }
-    if (shm_fd != -1) {
+    if (shm_fd != -1)
         close(shm_fd);
-    }
-    if (sem_cook != SEM_FAILED) {
+    if (sem_cook != SEM_FAILED)
         sem_close(sem_cook);
-    }
-    if (sem_savages != SEM_FAILED) {
+    if (sem_savages != SEM_FAILED)
         sem_close(sem_savages);
-    }
-    if (sem_mtx != SEM_FAILED) {
+    if (sem_mtx != SEM_FAILED)
         sem_close(sem_mtx);
-    }
-
 
 	return 0;
 }

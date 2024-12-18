@@ -16,17 +16,20 @@ datos_compartidos *mem_comp;
 volatile int finish = 0; 
 
 void putServingsInPot(int servings){
+
 	printf("\tCooker[%lu] putServingsInPot\n", getpid());
 	sem_wait(sem_mtx);	//LOCK
 
-	while(mem_comp->servings > 0 && !finish){	// Mientras condicion !true --> WAIT
+	while(mem_comp->servings > 0 && !finish){
+
 		printf("\tCooker[%lu] esperando\n", getpid());
 		mem_comp->cook_waiting++;	// Este cocinero se quedad esperando
-		sem_post(sem_mtx);			// libera el sem (unlock)
-		sem_wait(sem_cook);			// esperar a que los salvajes llamen al cocinero
+		sem_post(sem_mtx);		// libera el sem (unlock)
+		sem_wait(sem_cook);	// esperar a que los salvajes llamen al cocinero
+
 		if (finish)
 			return;
-		sem_wait(sem_mtx); 			// esperar a que me devuelvan el mutex (lock)
+		sem_wait(sem_mtx); 	// esperar a que me devuelvan el mutex (lock)
 	}
 	
 
@@ -41,7 +44,8 @@ void putServingsInPot(int servings){
 	sem_post(sem_mtx);	//UNLOCK
 }
 
-void cook(void){
+void cook(){
+
 	while(!finish) {
 		putServingsInPot(M);
 	}
@@ -57,7 +61,7 @@ int main(int argc, char *argv[]){
 	signal(SIGTERM, sigHandler); // Registrar el manejador para SIGTERM
 	signal(SIGINT, sigHandler); // Registrar el manejador para SIGINT
 
-	//MEMORIA COMPARTIDA
+	// MEMORIA COMPARTIDA
 	int shm_fd; //zona de memoria compartida (SHared Memory)
 
 	// Creamos o abrimos el segmento de memoria compartida
@@ -75,7 +79,7 @@ int main(int argc, char *argv[]){
 	mem_comp = (datos_compartidos*) mmap(0, sizeof(datos_compartidos), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 
 
-	//SEMAFOROS
+	// SEMAFOROS
 	// Inicializado en 0 porque que el cocinero debe esperar que los salvajes lo despierten.
 	if ((sem_cook = sem_open("/sem_cook", O_CREAT, 0777, 0)) == SEM_FAILED) {
 		perror("Error sem_open(sem_cook)");
@@ -101,9 +105,9 @@ int main(int argc, char *argv[]){
 	//LET HIM COOK! LET HIM COOK NOW!!! 
 	//I SAIDDD LEEEET!!! HIM!!! COOK!!! SUENA PHONK TREMENDO
 	printf("\tCooker[%lu] empieza\n", getpid());
-	cook();		//Logicca del programa, si finish=1 sale ded aqui
+	cook();
 
-	//LIBERAR Memoria compartida y semaforos
+	// LIBERAR Memoria compartida y semaforos
 	liberacion:
 		if (mem_comp && mem_comp != MAP_FAILED) {
         	munmap(mem_comp, sizeof(datos_compartidos));
@@ -127,22 +131,3 @@ int main(int argc, char *argv[]){
 
 	return 0;
 }
-
-
-/*
-
-
-
-	int truncate(const char *path, off_t length) y ftruncate(int fd, off_t length):
-		Truncan un fichero al tamanio especificado(length bytes), si el fichero era mas grande los datos se pierden
-		y si era mas pequenio el espacio nuevo se lee como '\0'
-	 	
-
-
-
-
-
-
-
-
-*/
